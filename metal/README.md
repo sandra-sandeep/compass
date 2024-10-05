@@ -30,7 +30,7 @@ Metal is the backend server for Compass, a journaling application. It provides A
 
 1. Start the Flask server:
    ```
-   uv run app.py
+   uv run metal/app.py
    ```
 
 The server will start on `http://localhost:5000`.
@@ -42,7 +42,7 @@ To run the API tests:
 1. Ensure the Flask server is running.
 2. Run the test script:
    ```
-   uv run api_test.py
+   uv run tests/test_api.py
    ```
 
 ## API Endpoints
