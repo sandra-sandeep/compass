@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Typography, Button, Box, TextField, Tab, Tabs } from '@mui/material'
+import { Typography, Button, Box, TextField, Tab, Tabs, Alert } from '@mui/material'
 import { useRouter } from 'next/navigation'
 
 export default function AuthPage() {
@@ -9,19 +9,42 @@ export default function AuthPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
   const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (tab === 0) {
-      console.log('Login:', email, password)
-      // Implement login logic here
-    } else {
-      console.log('Register:', email, password, confirmPassword)
-      // Implement register logic here
+    setError('')
+
+    if (tab === 1 && password !== confirmPassword) {
+      setError("Passwords don't match")
+      return
     }
-    // For now, just redirect to the journal page
-    router.push('/journal')
+
+    const endpoint = tab === 0 ? 'http://127.0.0.1:5000/api/auth/login' : 'http://127.0.0.1:5000/api/auth/register'
+    const body = { email, password }  // confirmPassword is not included
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        localStorage.setItem('token', data.token)
+        router.push('/journal')
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || 'An error occurred')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      setError('An unexpected error occurred')
+    }
   }
 
   return (
@@ -31,6 +54,7 @@ export default function AuthPage() {
         <Tab label="Register" />
       </Tabs>
       <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <TextField
           margin="normal"
           required
