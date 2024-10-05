@@ -21,7 +21,7 @@ export default function AuthPage() {
       return
     }
 
-    const endpoint = tab === 0 ? 'http://127.0.0.1:5000/api/auth/login' : 'http://127.0.0.1:5000/api/auth/register'
+    const endpoint = tab === 0 ? '/api/auth/login' : '/api/auth/register'
     const body = { email, password }  // confirmPassword is not included
 
     try {

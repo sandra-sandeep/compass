@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from flask import Flask
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from metal.config import Config
 
@@ -11,6 +12,9 @@ def create_app():
     
     # Load configuration
     app.config.from_object(Config)
+
+    # Initialize CORS
+    CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}})
     
     # Initialize JWTManager
     jwt.init_app(app)
