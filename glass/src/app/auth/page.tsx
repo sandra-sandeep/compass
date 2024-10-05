@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Typography, Button, Box, TextField, Tab, Tabs, Alert } from '@mui/material'
 import { useRouter } from 'next/navigation'
+import { loginOrRegister } from '@/utils/api'
 
 export default function AuthPage() {
   const [tab, setTab] = useState(0)
@@ -25,11 +26,8 @@ export default function AuthPage() {
     const body = { email, password }  // confirmPassword is not included
 
     try {
-      const response = await fetch(endpoint, {
+      const response = await loginOrRegister(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(body),
       })
 
