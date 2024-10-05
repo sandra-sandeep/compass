@@ -8,4 +8,7 @@ dependencies = [
     "python-dotenv",
     "openai",
     "flask",
+    "flask-jwt-extended",
+    "werkzeug",
+    "requests",
 ]
