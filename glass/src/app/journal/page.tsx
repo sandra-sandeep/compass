@@ -4,11 +4,14 @@ import React from 'react'
 import { Typography, Box } from '@mui/material'
 import JournalEntryForm from '@/components/JournalEntryForm'
 import { authenticatedFetch } from '@/utils/api'
+import { useRouter } from 'next/navigation'
 
 export default function JournalPage() {
+  const router = useRouter()
+
   const handleSubmit = async (title: string, content: string) => {
     try {
-      const response = await authenticatedFetch('/api/entries', {
+      const response = await authenticatedFetch('/api/entries/', {
         method: 'POST',
         body: JSON.stringify({ title, content }),
       })
@@ -17,6 +20,7 @@ export default function JournalPage() {
         const newEntry = await response.json()
         console.log('New entry created:', newEntry)
         // Handle successful creation (e.g., show a success message, clear the form)
+        router.push(`/entries`)
       } else {
         // Handle error
         console.error('Failed to create entry')
