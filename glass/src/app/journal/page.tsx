@@ -22,6 +22,7 @@ interface JournalEntry {
   title: string
   content: string
   createdAt: string
+  updatedAt: string
 }
 
 export default function JournalPage() {
@@ -42,7 +43,11 @@ export default function JournalPage() {
       const response = await authenticatedFetch('/api/entries/', { method: 'GET' })
       if (!response.ok) throw new Error('Failed to fetch entries')
       const data = await response.json()
-      setEntries(data)
+      // Sort entries by updatedAt time, latest first
+      const sortedEntries = data.sort((a: JournalEntry, b: JournalEntry) => 
+        new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+      setEntries(sortedEntries)
     } catch (error) {
       console.error('Error fetching entries:', error)
     }
@@ -83,7 +88,8 @@ export default function JournalPage() {
         })
         if (!response.ok) throw new Error('Failed to update entry')
         const updatedEntry = await response.json()
-        setEntries(entries.map(e => e.id === updatedEntry.id ? updatedEntry : e))
+        setEntries(entries.map(e => e.id === updatedEntry.id ? updatedEntry : e)
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
         setSelectedEntry(updatedEntry)
       }
     } catch (error) {
@@ -115,15 +121,19 @@ export default function JournalPage() {
       borderRight: '1px solid',
       borderColor: 'divider',
       bgcolor: 'background.paper',
+      display: 'flex',
+      flexDirection: 'column',
     }}>
-      <Button 
-        fullWidth 
-        variant="contained" 
-        onClick={handleNewEntry}
-        sx={{ mb: 2 }}
-      >
-        Start Writing
-      </Button>
+      <Box sx={{ p: 2, pt: 3 }}> {/* Added padding top for space above the button */}
+        <Button 
+          fullWidth 
+          variant="contained" 
+          onClick={handleNewEntry}
+          sx={{ mb: 2 }}
+        >
+          Start Writing
+        </Button>
+      </Box>
       <List>
         {entries.map((entry) => (
           <ListItem 
@@ -139,7 +149,7 @@ export default function JournalPage() {
               secondary={
                 <>
                   <Typography component="span" variant="body2" color="text.primary">
-                    {new Date(entry.createdAt).toLocaleDateString()}
+                    {new Date(entry.updatedAt).toLocaleString()} {/* Changed from createdAt to updatedAt */}
                   </Typography>
                   {' — ' + entry.content.substring(0, 30) + '...'}
                 </>
@@ -201,10 +211,10 @@ export default function JournalPage() {
   return (
     <Box sx={{ 
       display: 'flex', 
-      height: '100vh', // Changed from calc(100vh - 64px)
+      height: '100vh',
       width: '100%',
       position: 'fixed',
-      top: 0, // Changed from 64
+      top: 0,
       left: 0,
       right: 0,
       bottom: 0,
