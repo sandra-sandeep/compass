@@ -2,7 +2,7 @@
 
 # Before running this script, securely transfer the .env file to the server and set the correct permissions
 # Then download the setup script from GitHub and execute it
-# wget https://raw.githubusercontent.com/sandra-sandeep/compass/main/setup.sh -O setup.sh
+# wget https://raw.githubusercontent.com/sandra-sandeep/compass/refs/heads/main/setup.sh -O setup.sh
 # chmod +x setup.sh
 # ./setup.sh
 
@@ -12,6 +12,9 @@ if [ ! -f ".env" ]; then
     echo "Error: .env file not found. Please transfer the .env file to the server and set the correct permissions."
     exit 1
 fi
+
+# Set DEBIAN_FRONTEND to noninteractive to suppress prompts
+export DEBIAN_FRONTEND=noninteractive
 
 # Update and upgrade the system
 sudo apt update && sudo apt upgrade -y
