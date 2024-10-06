@@ -20,37 +20,38 @@ set -x
 export DEBIAN_FRONTEND=noninteractive
 
 # Update and upgrade the system
-sudo apt update && sudo apt upgrade -y
+sudo apt-get update
+sudo NEEDRESTART_MODE=a apt-get dist-upgrade --yes
 
 # Install Git
-sudo apt install git -y
+sudo apt-get install git -y
 
 # Install Node.js and npm (for glass)
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo apt-get install -y nodejs
 
 # Install Python 3.10 and pip (for metal)
-sudo apt install -y python3.10 python3.10-venv python3.10-dev
-sudo apt install -y python3-pip
+sudo apt-get install -y python3.10 python3.10-venv python3.10-dev
+sudo apt-get install -y python3-pip
 
 # Install uv (Python package installer and virtual environment manager)
-pip install uv -y
+pip install uv
 
 # Add the server's SSH key to known_hosts to avoid interactive prompt
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 # Clone the repositories with disabled host key checking
-git clone git@github.com:sandra-sandeep/compass.git
+git clone https://github.com/sandra-sandeep/compass.git
 
 # Check if the clone was successful
 if [ $? -ne 0 ]; then
-    echo "Error: Failed to clone the repositories. Please check your SSH key and try again."
+    echo "Error: Failed to clone the repository. Please check your SSH key and try again."
     exit 1
 fi
 
 # Setup glass (Next.js frontend)
 cd compass/glass
-npm install -y
+npm install
 
 # Build the Next.js application
 npm run build
