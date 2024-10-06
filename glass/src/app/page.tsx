@@ -1,3 +1,5 @@
+'use client'
+
 import { Typography, Button, Box } from '@mui/material'
 import Link from 'next/link'
 
@@ -9,7 +11,7 @@ export default function HomePage() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 'calc(100vh - 64px)', // Adjust this value based on your AppBar height
+        minHeight: '100vh',
       }}
     >
       <Typography variant="h2" component="h1" gutterBottom>
@@ -26,7 +28,7 @@ export default function HomePage() {
           color="primary"
           size="large"
         >
-          Get Started
+          Login or Signup
         </Button>
       </Box>
     </Box>
