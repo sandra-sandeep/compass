@@ -4,7 +4,7 @@
 # Then download the setup script from GitHub and execute it
 # wget https://raw.githubusercontent.com/sandra-sandeep/compass/refs/heads/main/setup.sh -O setup.sh
 # chmod +x setup.sh
-# ./setup.sh
+# sudo ./setup.sh
 
 
 # Check that the .env file exists and has the correct permissions
@@ -12,6 +12,9 @@ if [ ! -f ".env" ]; then
     echo "Error: .env file not found. Please transfer the .env file to the server and set the correct permissions."
     exit 1
 fi
+
+# Enable command echoing
+set -x
 
 # Set DEBIAN_FRONTEND to noninteractive to suppress prompts
 export DEBIAN_FRONTEND=noninteractive
@@ -31,17 +34,32 @@ sudo apt install -y python3.10 python3.10-venv python3.10-dev
 sudo apt install -y python3-pip
 
 # Install uv (Python package installer and virtual environment manager)
-pip install uv
+pip install uv -y
 
-# Clone the repositories
+# Add the server's SSH key to known_hosts to avoid interactive prompt
+ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+
+# Clone the repositories with disabled host key checking
 git clone git@github.com:sandra-sandeep/compass.git
+
+# Check if the clone was successful
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to clone the repositories. Please check your SSH key and try again."
+    exit 1
+fi
 
 # Setup glass (Next.js frontend)
 cd compass/glass
-npm install
+npm install -y
 
 # Build the Next.js application
 npm run build
+
+# Check if the build was successful
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to build the glass frontend. Please check your environment and try again."
+    exit 1
+fi
 
 # Setup metal (Flask backend)
 cd ../metal
@@ -57,6 +75,12 @@ sudo npm install -g pm2
 # Start the Next.js application with PM2
 pm2 start npm --name "glass" -- start
 
+# Check if the PM2 start command was successful
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to start the Next.js application with PM2. Please check your environment and try again."
+    exit 1
+fi
+
 # Save the PM2 process list and configure it to start on boot
 pm2 save
 pm2 startup
@@ -70,8 +94,8 @@ After=network.target
 [Service]
 User=$USER
 WorkingDirectory=$HOME/compass/metal
-Environment="PATH=$HOME/compass/metal/.venv/bin"
-ExecStart=$HOME/compass/metal/.venv/bin/flask run --host=0.0.0.0 --port=5000
+Environment="FLASK_ENV=production"
+ExecStart=uv run metal/app.py --host=0.0.0.0 --port=5000
 
 [Install]
 WantedBy=multi-user.target
@@ -86,4 +110,8 @@ sudo systemctl start metal.service
 
 # Print completion message
 echo "Process managers for Glass and Metal have been set up and started."
+
+
+# Disable command echoing if needed
+# set +x
 
