@@ -8,14 +8,12 @@ import {
   ListItem, 
   ListItemText, 
   Button, 
-  Paper, 
   TextField,
   IconButton,
-  Drawer,
   useMediaQuery,
   Theme
 } from '@mui/material'
-import { Edit as EditIcon, Delete as DeleteIcon, Menu as MenuIcon } from '@mui/icons-material'
+import { Delete as DeleteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material'
 import { useTheme } from '@mui/material/styles'
 import { authenticatedFetch } from '@/utils/api'
 
@@ -32,7 +30,6 @@ export default function JournalPage() {
   const [isNewEntry, setIsNewEntry] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const theme = useTheme()
   const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
 
@@ -63,7 +60,6 @@ export default function JournalPage() {
     setIsNewEntry(false)
     setTitle(entry.title)
     setContent(entry.content)
-    if (isMobile) setIsSidebarOpen(false)
   }
 
   const handleSave = async () => {
@@ -76,7 +72,10 @@ export default function JournalPage() {
         if (!response.ok) throw new Error('Failed to create entry')
         const newEntry = await response.json()
         setEntries([newEntry, ...entries])
-        setSelectedEntry(newEntry)
+        setSelectedEntry(null)
+        setIsNewEntry(false)
+        setTitle('')
+        setContent('')
       } else if (selectedEntry) {
         const response = await authenticatedFetch(`/api/entries/${selectedEntry.id}`, {
           method: 'PUT',
@@ -87,7 +86,6 @@ export default function JournalPage() {
         setEntries(entries.map(e => e.id === updatedEntry.id ? updatedEntry : e))
         setSelectedEntry(updatedEntry)
       }
-      setIsNewEntry(false)
     } catch (error) {
       console.error('Error saving entry:', error)
     }
@@ -110,7 +108,14 @@ export default function JournalPage() {
   }
 
   const renderSidebar = () => (
-    <Box sx={{ width: 300, flexShrink: 0 }}>
+    <Box sx={{ 
+      width: '100%', 
+      height: '100%', 
+      overflow: 'auto', 
+      borderRight: '1px solid',
+      borderColor: 'divider',
+      bgcolor: 'background.paper',
+    }}>
       <Button 
         fullWidth 
         variant="contained" 
@@ -140,7 +145,7 @@ export default function JournalPage() {
                 </>
               }
             />
-            <IconButton onClick={() => handleDelete(entry.id)} edge="end" aria-label="delete">
+            <IconButton onClick={(e) => { e.stopPropagation(); handleDelete(entry.id); }} edge="end" aria-label="delete">
               <DeleteIcon />
             </IconButton>
           </ListItem>
@@ -150,7 +155,19 @@ export default function JournalPage() {
   )
 
   const renderMainContent = () => (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ flexGrow: 1, p: 3, height: '100%', overflow: 'auto' }}>
+      {isMobile && (
+        <Button
+          startIcon={<ArrowBackIcon />}
+          onClick={() => {
+            setSelectedEntry(null)
+            setIsNewEntry(false)
+          }}
+          sx={{ mb: 2 }}
+        >
+          Back to Entries
+        </Button>
+      )}
       {selectedEntry || isNewEntry ? (
         <Box component="form" noValidate autoComplete="off">
           <TextField
@@ -175,43 +192,33 @@ export default function JournalPage() {
         </Box>
       ) : (
         <Typography variant="h6" align="center">
-          Start writing or{' '}
-          <Button onClick={() => setIsSidebarOpen(true)}>peruse a previous journal entry</Button>
+          Select an entry or start writing a new one
         </Typography>
       )}
     </Box>
   )
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      height: '100vh', // Changed from calc(100vh - 64px)
+      width: '100%',
+      position: 'fixed',
+      top: 0, // Changed from 64
+      left: 0,
+      right: 0,
+      bottom: 0,
+    }}>
       {isMobile ? (
-        <Drawer
-          variant="temporary"
-          open={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          ModalProps={{ keepMounted: true }}
-        >
-          {renderSidebar()}
-        </Drawer>
+        (selectedEntry || isNewEntry) ? renderMainContent() : renderSidebar()
       ) : (
-        <Paper elevation={3} sx={{ mr: 2 }}>
-          {renderSidebar()}
-        </Paper>
+        <>
+          <Box sx={{ width: 300, flexShrink: 0 }}>
+            {renderSidebar()}
+          </Box>
+          {renderMainContent()}
+        </>
       )}
-      <Box sx={{ flexGrow: 1 }}>
-        {isMobile && (
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={() => setIsSidebarOpen(true)}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-        )}
-        {renderMainContent()}
-      </Box>
     </Box>
   )
 }
