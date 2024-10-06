@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Before running this script, securely transfer the .env file to the server and set the correct permissions
+# Then download the setup script from GitHub and execute it
+# wget https://raw.githubusercontent.com/sandra-sandeep/compass/main/setup.sh -O setup.sh
+# chmod +x setup.sh
+# ./setup.sh
+
+
+# Check that the .env file exists and has the correct permissions
+if [ ! -f ".env" ]; then
+    echo "Error: .env file not found. Please transfer the .env file to the server and set the correct permissions."
+    exit 1
+fi
+
 # Update and upgrade the system
 sudo apt update && sudo apt upgrade -y
 
@@ -30,6 +43,7 @@ npm run build
 # Setup metal (Flask backend)
 cd ../metal
 uv sync
+mv ../../.env .
 
 # Print completion message
 echo "Setup complete. Glass and Metal are ready to be served."
