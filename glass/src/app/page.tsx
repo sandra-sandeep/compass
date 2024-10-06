@@ -1,36 +1,58 @@
 'use client'
 
-import { Typography, Button, Box } from '@mui/material'
-import Link from 'next/link'
+import { Box, Button, Container, Typography } from '@mui/material'
+import { useRouter } from 'next/navigation'
 
-export default function HomePage() {
+export default function Home() {
+  const router = useRouter()
+
   return (
     <Box
       sx={{
+        bgcolor: 'background.default',
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '100vh',
+        alignItems: 'center',
       }}
     >
-      <Typography variant="h2" component="h1" gutterBottom>
-        Welcome to Compass
-      </Typography>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Your Personal Journaling App
-      </Typography>
-      <Box sx={{ mt: 4 }}>
-        <Button
-          component={Link}
-          href="/auth"
-          variant="contained"
-          color="primary"
-          size="large"
+      <Container maxWidth="sm">
+        <Typography
+          variant="h2"
+          component="h1"
+          gutterBottom
+          align="center"
+          sx={{
+            color: 'text.primary',
+            fontSize: { xs: '2.5rem', sm: '3.75rem' }, // Responsive font size
+            textAlign: 'center', // Ensure center alignment on all screen sizes
+          }}
         >
-          Login or Signup
-        </Button>
-      </Box>
+          Welcome to Compass
+        </Typography>
+        <Typography
+          variant="h5"
+          align="center"
+          color="text.secondary"
+          paragraph
+          sx={{
+            fontSize: { xs: '1.25rem', sm: '1.5rem' }, // Responsive font size
+          }}
+        >
+          Your personal journaling companion. Start your journey of self-reflection and growth today.
+        </Typography>
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'center' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={() => router.push('/auth')}
+          >
+            Login or Signup
+          </Button>
+        </Box>
+      </Container>
     </Box>
   )
 }
