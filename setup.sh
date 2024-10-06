@@ -1,11 +1,8 @@
 #!/bin/bash
 
 # Before running this script, securely transfer the .env file to the server and set the correct permissions
-# Then download the setup script from GitHub and execute it
-# wget https://raw.githubusercontent.com/sandra-sandeep/compass/refs/heads/main/setup.sh -O setup.sh
-# chmod +x setup.sh
-# sudo ./setup.sh
-
+# Command to download, set permissions, and execute the setup script:
+# wget https://raw.githubusercontent.com/sandra-sandeep/compass/refs/heads/main/setup.sh -O setup.sh && chmod +x setup.sh && sudo ./setup.sh
 
 # Check that the .env file exists and has the correct permissions
 if [ ! -f ".env" ]; then
@@ -37,7 +34,7 @@ sudo apt-get install -y python3-pip
 # Install uv (Python package installer and virtual environment manager)
 pip install uv
 
-# Add the server's SSH key to known_hosts to avoid interactive prompt
+# Add Github's SSH key to known_hosts to avoid interactive prompt
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 # Clone the repositories with disabled host key checking
@@ -51,7 +48,7 @@ fi
 
 # Setup glass (Next.js frontend)
 cd compass/glass
-npm install
+npm ci
 
 # Build the Next.js application
 npm run build
