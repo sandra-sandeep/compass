@@ -1,7 +1,11 @@
 #!/bin/bash
 
-# Before running this script, securely transfer the .env file to the server and set the correct permissions
-# Command to download, set permissions, and execute the setup script:
+# Before running this script, follow these steps:
+#   1. Transfer the .env file to the server and set the correct permissions
+#   2. Run these lines and reboot:
+# sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractiveNEEDRESTART_MODE=a apt-get dist-upgrade --yes
+# sudo reboot
+#   3. Download, set permissions, and execute the setup script:
 # wget https://raw.githubusercontent.com/sandra-sandeep/compass/refs/heads/main/setup.sh -O setup.sh && chmod +x setup.sh && ./setup.sh
 
 # Check that the .env file exists and has the correct permissions
@@ -32,7 +36,7 @@ sudo apt-get install -y python3.10 python3.10-venv python3.10-dev || { echo "Pyt
 sudo apt-get install -y python3-pip || { echo "pip installation failed"; exit 1; }
 
 # Install uv (Python package installer and virtual environment manager)
-pip install uv || { echo "uv installation failed"; exit 1; }
+sudo pip install uv || { echo "uv installation failed"; exit 1; }
 
 # Add Github's SSH key to known_hosts to avoid interactive prompt
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
@@ -69,8 +73,8 @@ Description=Metal Flask Application
 After=network.target
 
 [Service]
-User=$USER
-WorkingDirectory=$HOME/compass/metal
+User=ubuntu
+WorkingDirectory=/home/ubuntu/compass/metal
 Environment="FLASK_ENV=production"
 ExecStart=uv run metal/app.py --host=0.0.0.0 --port=5000
 

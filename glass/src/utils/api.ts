@@ -6,7 +6,7 @@ const HEADER_BASE = {
     'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
 }
 
-const BACKEND_URL_BASE = "http://127.0.0.1:5000"
+const BACKEND_URL_BASE = "https://127.0.0.1:5000"
 
 async function authenticatedFetch(url: string, options: RequestInit = {}) {
     return callApi(url, options)
