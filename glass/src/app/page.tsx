@@ -1,10 +1,22 @@
 'use client'
 
+import React, { useEffect } from 'react'
 import { Box, Button, Container, Typography } from '@mui/material'
 import { useRouter } from 'next/navigation'
 
 export default function Home() {
   const router = useRouter()
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token')
+      if (token) {
+        router.push('/journal')
+      }
+    }
+
+    checkAuth()
+  }, [router])
 
   return (
     <Box
