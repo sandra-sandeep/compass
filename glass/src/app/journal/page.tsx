@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Box, 
   Typography, 
@@ -11,8 +11,9 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from '@mui/material'
-import { Delete as DeleteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material'
+import { Delete as DeleteIcon, ArrowBack as ArrowBackIcon, Check as CheckIcon } from '@mui/icons-material'
 import { authenticatedFetch } from '@/utils/api'
 
 interface JournalEntry {
@@ -29,6 +30,10 @@ export default function JournalPage() {
   const [isNewEntry, setIsNewEntry] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [isDirty, setIsDirty] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
@@ -36,7 +41,55 @@ export default function JournalPage() {
     fetchEntries()
   }, [])
 
+  const handleSave = useCallback(async () => {
+    if (!title && !content) return
+
+    setIsSaving(true)
+    const entryTitle = title || 'Draft'
+    try {
+      if (isNewEntry) {
+        const response = await authenticatedFetch('/api/entries/', {
+          method: 'POST',
+          body: JSON.stringify({ title: entryTitle, content })
+        })
+        if (!response.ok) throw new Error('Failed to create entry')
+        const newEntry = await response.json()
+        setEntries(prevEntries => [newEntry, ...prevEntries])
+        setSelectedEntry(newEntry)
+        setIsNewEntry(false)
+      } else if (selectedEntry) {
+        const response = await authenticatedFetch(`/api/entries/${selectedEntry.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ title: entryTitle, content })
+        })
+        if (!response.ok) throw new Error('Failed to update entry')
+        const updatedEntry = await response.json()
+        setEntries(prevEntries => prevEntries.map(e => e.id === updatedEntry.id ? updatedEntry : e)
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
+        setSelectedEntry(updatedEntry)
+      }
+      setIsDirty(false)
+      setError(null)
+    } catch (error) {
+      console.error('Error saving entry:', error)
+      setError('Failed to save entry. Please try again later.')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [title, content, isNewEntry, selectedEntry])
+
+  useEffect(() => {
+    if (isDirty) {
+      const debouncedSave = setTimeout(() => {
+        handleSave()
+      }, 5000)
+
+      return () => clearTimeout(debouncedSave)
+    }
+  }, [title, content, isDirty, handleSave])
+
   const fetchEntries = async () => {
+    setIsLoading(true)
     try {
       const response = await authenticatedFetch('/api/entries/', { method: 'GET' })
       if (!response.ok) throw new Error('Failed to fetch entries')
@@ -45,53 +98,35 @@ export default function JournalPage() {
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )
       setEntries(sortedEntries)
+      setError(null)
     } catch (error) {
       console.error('Error fetching entries:', error)
+      setError('Failed to fetch entries. Please try again later.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleNewEntry = () => {
+    if (isDirty) {
+      handleSave()
+    }
     setSelectedEntry(null)
     setIsNewEntry(true)
     setTitle('')
     setContent('')
+    setIsDirty(false)
   }
 
   const handleSelectEntry = (entry: JournalEntry) => {
+    if (isDirty) {
+      handleSave()
+    }
     setSelectedEntry(entry)
     setIsNewEntry(false)
     setTitle(entry.title)
     setContent(entry.content)
-  }
-
-  const handleSave = async () => {
-    try {
-      if (isNewEntry) {
-        const response = await authenticatedFetch('/api/entries/', {
-          method: 'POST',
-          body: JSON.stringify({ title, content })
-        })
-        if (!response.ok) throw new Error('Failed to create entry')
-        const newEntry = await response.json()
-        setEntries([newEntry, ...entries])
-        setSelectedEntry(null)
-        setIsNewEntry(false)
-        setTitle('')
-        setContent('')
-      } else if (selectedEntry) {
-        const response = await authenticatedFetch(`/api/entries/${selectedEntry.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ title, content })
-        })
-        if (!response.ok) throw new Error('Failed to update entry')
-        const updatedEntry = await response.json()
-        setEntries(entries.map(e => e.id === updatedEntry.id ? updatedEntry : e)
-          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
-        setSelectedEntry(updatedEntry)
-      }
-    } catch (error) {
-      console.error('Error saving entry:', error)
-    }
+    setIsDirty(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -104,9 +139,12 @@ export default function JournalPage() {
         setIsNewEntry(false)
         setTitle('')
         setContent('')
+        setIsDirty(false)
       }
+      setError(null)
     } catch (error) {
       console.error('Error deleting entry:', error)
+      setError('Failed to delete entry. Please try again later.')
     }
   }
 
@@ -121,7 +159,7 @@ export default function JournalPage() {
     })
   }
 
-  const renderSidebar = () => (
+  const renderSidebar = useCallback(() => (
     <Box sx={{ 
       width: '100%', 
       height: '100%', 
@@ -131,50 +169,74 @@ export default function JournalPage() {
       display: 'flex',
       flexDirection: 'column',
     }}>
-      <Box sx={{ p: 2, pt: 3 }}>
+      <Box sx={{ 
+        p: 2,
+        bgcolor: 'background.paper',
+        borderBottom: '1px solid',
+        borderColor: 'primary.main',
+      }}>
         <Button 
           fullWidth 
           variant="contained" 
           onClick={handleNewEntry}
-          sx={{ mb: 2 }}
+          aria-label="Start a new journal entry"
+          sx={{ 
+            bgcolor: 'primary.main',
+            color: 'background.paper',
+            '&:hover': {
+              bgcolor: 'primary.dark',
+            },
+          }}
         >
           Start Writing
         </Button>
       </Box>
-      <List sx={{ px: 2 }}>
-        {entries.map((entry) => (
-          <Card 
-            key={entry.id}
-            onClick={() => handleSelectEntry(entry)}
-            sx={{ 
-              cursor: 'pointer', 
-              mb: 2,
-              borderRadius: 2,
-              transition: 'all 0.3s',
-              '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
-                {entry.title}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-                {entry.content.substring(0, 50)}...
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
-                {formatDate(entry.updatedAt)}
-              </Typography>
-            </CardContent>
-          </Card>
-        ))}
-      </List>
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <List sx={{ px: 2, py: 2, flexGrow: 1, overflow: 'auto' }}>
+          {entries.map((entry) => (
+            <Card 
+              key={entry.id}
+              onClick={() => handleSelectEntry(entry)}
+              sx={{ 
+                cursor: 'pointer', 
+                mb: 2,
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                transition: 'all 0.3s',
+                '&:hover': {
+                  boxShadow: 6,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
+                  {entry.title}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+                  {entry.content.substring(0, 50)}...
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
+                  {formatDate(entry.updatedAt)}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </List>
+      )}
+      {error && (
+        <Typography color="error" sx={{ mt: 2, textAlign: 'center', px: 2 }}>
+          {error}
+        </Typography>
+      )}
     </Box>
-  )
+  ), [entries, isLoading, error, handleNewEntry, handleSelectEntry])
 
-  const renderMainContent = () => (
+  const renderMainContent = useCallback(() => (
     <Box sx={{ flexGrow: 1, p: 3, height: '100%', overflow: 'auto', bgcolor: 'background.default' }}>
       {isMobile && (
         <Button
@@ -195,7 +257,10 @@ export default function JournalPage() {
             fullWidth
             label="Title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setIsDirty(true)
+            }}
             margin="normal"
           />
           <TextField
@@ -204,12 +269,58 @@ export default function JournalPage() {
             multiline
             rows={10}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value)
+              setIsDirty(true)
+            }}
             margin="normal"
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button variant="contained" onClick={handleSave}>
-              Save
+            <Button 
+              variant="contained" 
+              onClick={handleSave}
+              disabled={isSaving}
+              sx={{ 
+                minWidth: '100px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  transition: 'opacity 0.3s, transform 0.3s',
+                  opacity: isDirty || isSaving ? 1 : 0,
+                  transform: isDirty || isSaving ? 'translateY(0)' : 'translateY(100%)',
+                }}
+              >
+                {isDirty ? 'Save' : (isSaving ? 'Saving...' : '')}
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  transition: 'opacity 0.3s, transform 0.3s',
+                  opacity: !isDirty && !isSaving ? 1 : 0,
+                  transform: !isDirty && !isSaving ? 'translateY(0)' : 'translateY(-100%)',
+                }}
+              >
+                <CheckIcon sx={{ mr: 1 }} />
+                Saved
+              </Box>
             </Button>
             {selectedEntry && (
               <Button 
@@ -228,8 +339,13 @@ export default function JournalPage() {
           Select an entry or start writing a new one
         </Typography>
       )}
+      {error && (
+        <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
+          {error}
+        </Typography>
+      )}
     </Box>
-  )
+  ), [selectedEntry, isNewEntry, title, content, isDirty, isSaving, error, isMobile, handleSave, handleDelete])
 
   return (
     <Box sx={{ 
