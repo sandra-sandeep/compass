@@ -5,16 +5,15 @@ import {
   Box, 
   Typography, 
   List, 
-  ListItem, 
-  ListItemText, 
+  Card,
+  CardContent,
   Button, 
   TextField,
   IconButton,
   useMediaQuery,
-  Theme
+  useTheme,
 } from '@mui/material'
 import { Delete as DeleteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material'
-import { useTheme } from '@mui/material/styles'
 import { authenticatedFetch } from '@/utils/api'
 
 interface JournalEntry {
@@ -32,7 +31,7 @@ export default function JournalPage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const theme = useTheme()
-  const isMobile = useMediaQuery((theme: Theme) => theme.breakpoints.down('md'))
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   useEffect(() => {
     fetchEntries()
@@ -43,7 +42,6 @@ export default function JournalPage() {
       const response = await authenticatedFetch('/api/entries/', { method: 'GET' })
       if (!response.ok) throw new Error('Failed to fetch entries')
       const data = await response.json()
-      // Sort entries by updatedAt time, latest first
       const sortedEntries = data.sort((a: JournalEntry, b: JournalEntry) => 
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )
@@ -113,18 +111,28 @@ export default function JournalPage() {
     }
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    })
+  }
+
   const renderSidebar = () => (
     <Box sx={{ 
       width: '100%', 
       height: '100%', 
       overflow: 'auto', 
-      borderRight: '1px solid',
-      borderColor: 'divider',
-      bgcolor: 'background.paper',
+      bgcolor: 'primary.main',
+      color: 'background.paper',
       display: 'flex',
       flexDirection: 'column',
     }}>
-      <Box sx={{ p: 2, pt: 3 }}> {/* Added padding top for space above the button */}
+      <Box sx={{ p: 2, pt: 3 }}>
         <Button 
           fullWidth 
           variant="contained" 
@@ -134,38 +142,41 @@ export default function JournalPage() {
           Start Writing
         </Button>
       </Box>
-      <List>
+      <List sx={{ px: 2 }}>
         {entries.map((entry) => (
-          <ListItem 
-            key={entry.id} 
+          <Card 
+            key={entry.id}
             onClick={() => handleSelectEntry(entry)}
             sx={{ 
               cursor: 'pointer', 
-              bgcolor: selectedEntry?.id === entry.id ? 'action.selected' : 'inherit'
+              mb: 2,
+              borderRadius: 2,
+              transition: 'all 0.3s',
+              '&:hover': {
+                boxShadow: 6,
+                transform: 'translateY(-2px)',
+              },
             }}
           >
-            <ListItemText
-              primary={entry.title}
-              secondary={
-                <>
-                  <Typography component="span" variant="body2" color="text.primary">
-                    {new Date(entry.updatedAt).toLocaleString()} {/* Changed from createdAt to updatedAt */}
-                  </Typography>
-                  {' — ' + entry.content.substring(0, 30) + '...'}
-                </>
-              }
-            />
-            <IconButton onClick={(e) => { e.stopPropagation(); handleDelete(entry.id); }} edge="end" aria-label="delete">
-              <DeleteIcon />
-            </IconButton>
-          </ListItem>
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
+                {entry.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+                {entry.content.substring(0, 50)}...
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
+                {formatDate(entry.updatedAt)}
+              </Typography>
+            </CardContent>
+          </Card>
         ))}
       </List>
     </Box>
   )
 
   const renderMainContent = () => (
-    <Box sx={{ flexGrow: 1, p: 3, height: '100%', overflow: 'auto' }}>
+    <Box sx={{ flexGrow: 1, p: 3, height: '100%', overflow: 'auto', bgcolor: 'background.default' }}>
       {isMobile && (
         <Button
           startIcon={<ArrowBackIcon />}
@@ -174,6 +185,7 @@ export default function JournalPage() {
             setIsNewEntry(false)
           }}
           sx={{ mb: 2 }}
+          variant="outlined"
         >
           Back to Entries
         </Button>
@@ -196,12 +208,24 @@ export default function JournalPage() {
             onChange={(e) => setContent(e.target.value)}
             margin="normal"
           />
-          <Button variant="contained" onClick={handleSave} sx={{ mt: 2 }}>
-            Save
-          </Button>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+            <Button variant="contained" onClick={handleSave}>
+              Save
+            </Button>
+            {selectedEntry && (
+              <Button 
+                variant="outlined" 
+                color="error" 
+                onClick={() => handleDelete(selectedEntry.id)}
+                startIcon={<DeleteIcon />}
+              >
+                Delete
+              </Button>
+            )}
+          </Box>
         </Box>
       ) : (
-        <Typography variant="h6" align="center">
+        <Typography variant="h6" align="center" color="text.primary">
           Select an entry or start writing a new one
         </Typography>
       )}
