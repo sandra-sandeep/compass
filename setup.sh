@@ -38,7 +38,7 @@ sudo tee /etc/nginx/sites-available/compassletters.com > /dev/null <<EOL
 server {
     listen 80;
     server_name compassletters.com;
-    return 301 https://$host$request_uri;
+    return 301 'https://$host$request_uri';
 }
 
 server {
