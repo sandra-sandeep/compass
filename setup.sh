@@ -2,7 +2,7 @@
 
 # Before running this script, securely transfer the .env file to the server and set the correct permissions
 # Command to download, set permissions, and execute the setup script:
-# wget https://raw.githubusercontent.com/sandra-sandeep/compass/refs/heads/main/setup.sh -O setup.sh && chmod +x setup.sh && sudo ./setup.sh
+# wget https://raw.githubusercontent.com/sandra-sandeep/compass/refs/heads/main/setup.sh -O setup.sh && chmod +x setup.sh && ./setup.sh
 
 # Check that the .env file exists and has the correct permissions
 if [ ! -f ".env" ]; then
@@ -55,7 +55,7 @@ pm2 start npm --name "glass" -- start || { echo "PM2 start failed"; exit 1; }
 
 # Save the PM2 process list and configure it to start on boot
 pm2 save || { echo "PM2 save failed"; exit 1; }
-pm2 startup || { echo "PM2 startup failed"; exit 1; }
+sudo pm2 startup || { echo "PM2 startup failed"; exit 1; }
 
 # Setup metal (Flask backend)
 cd ../metal
