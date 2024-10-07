@@ -29,12 +29,23 @@ export default function JournalPage() {
   const [isNewEntry, setIsNewEntry] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [isDirty, setIsDirty] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
   useEffect(() => {
     fetchEntries()
   }, [])
+
+  useEffect(() => {
+    if (isDirty) {
+      const debouncedSave = setTimeout(() => {
+        handleSave()
+      }, 1000)
+
+      return () => clearTimeout(debouncedSave)
+    }
+  }, [title, content, isDirty])
 
   const fetchEntries = async () => {
     try {
@@ -51,37 +62,46 @@ export default function JournalPage() {
   }
 
   const handleNewEntry = () => {
+    if (isDirty) {
+      handleSave()
+    }
     setSelectedEntry(null)
     setIsNewEntry(true)
     setTitle('')
     setContent('')
+    setIsDirty(false)
   }
 
   const handleSelectEntry = (entry: JournalEntry) => {
+    if (isDirty) {
+      handleSave()
+    }
     setSelectedEntry(entry)
     setIsNewEntry(false)
     setTitle(entry.title)
     setContent(entry.content)
+    setIsDirty(false)
   }
 
   const handleSave = async () => {
+    if (!title && !content) return
+
+    const entryTitle = title || 'Draft'
     try {
       if (isNewEntry) {
         const response = await authenticatedFetch('/api/entries/', {
           method: 'POST',
-          body: JSON.stringify({ title, content })
+          body: JSON.stringify({ title: entryTitle, content })
         })
         if (!response.ok) throw new Error('Failed to create entry')
         const newEntry = await response.json()
         setEntries([newEntry, ...entries])
-        setSelectedEntry(null)
+        setSelectedEntry(newEntry)
         setIsNewEntry(false)
-        setTitle('')
-        setContent('')
       } else if (selectedEntry) {
         const response = await authenticatedFetch(`/api/entries/${selectedEntry.id}`, {
           method: 'PUT',
-          body: JSON.stringify({ title, content })
+          body: JSON.stringify({ title: entryTitle, content })
         })
         if (!response.ok) throw new Error('Failed to update entry')
         const updatedEntry = await response.json()
@@ -89,6 +109,7 @@ export default function JournalPage() {
           .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
         setSelectedEntry(updatedEntry)
       }
+      setIsDirty(false)
     } catch (error) {
       console.error('Error saving entry:', error)
     }
@@ -104,6 +125,7 @@ export default function JournalPage() {
         setIsNewEntry(false)
         setTitle('')
         setContent('')
+        setIsDirty(false)
       }
     } catch (error) {
       console.error('Error deleting entry:', error)
@@ -195,7 +217,10 @@ export default function JournalPage() {
             fullWidth
             label="Title"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setIsDirty(true)
+            }}
             margin="normal"
           />
           <TextField
@@ -204,7 +229,10 @@ export default function JournalPage() {
             multiline
             rows={10}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value)
+              setIsDirty(true)
+            }}
             margin="normal"
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
