@@ -30,6 +30,9 @@ sudo apt install certbot -y || { echo "Certbot installation failed"; exit 1; }
 # Generate SSL certificate
 sudo certbot certonly --standalone -d compassletters.com
 
+# Install NGINX
+sudo apt install nginx -y || { echo "NGINX installation failed"; exit 1; }
+
 # Generate NGINX configuration
 sudo tee /etc/nginx/sites-available/compassletters.com > /dev/null <<EOL
 server {
