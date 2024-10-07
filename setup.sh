@@ -24,6 +24,49 @@ export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update
 sudo NEEDRESTART_MODE=a apt-get dist-upgrade --yes || { echo "System upgrade failed"; exit 1; }
 
+# Install Certbot
+sudo apt install certbot -y || { echo "Certbot installation failed"; exit 1; }
+
+# Generate SSL certificate
+sudo certbot certonly --standalone -d compassletters.com
+
+# Generate NGINX configuration
+sudo tee /etc/nginx/sites-available/compassletters.com > /dev/null <<EOL
+server {
+    listen 80;
+    server_name compassletters.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name compassletters.com;
+
+    ssl_certificate /etc/letsencrypt/live/compassletters.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/compassletters.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    location / {
+        proxy_pass https://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOL
+
+# Enable the NGINX configuration
+sudo ln -s /etc/nginx/sites-available/compassletters.com /etc/nginx/sites-enabled/
+
+# Test NGINX configuration
+sudo nginx -t || { echo "NGINX configuration test failed"; exit 1; }
+
+# Restart NGINX
+sudo systemctl restart nginx
+
 # Install Git
 sudo apt-get install git -y || { echo "Git installation failed"; exit 1; }
 
