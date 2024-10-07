@@ -59,14 +59,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Setup metal (Flask backend)
-cd ../metal
-uv sync
-mv ../../.env .
-
-# Print completion message
-echo "Setup complete. Glass and Metal are ready to be served."
-
 # Install PM2 (Process Manager for Node.js)
 sudo npm install -g pm2
 
@@ -82,6 +74,11 @@ fi
 # Save the PM2 process list and configure it to start on boot
 pm2 save
 pm2 startup
+
+# Setup metal (Flask backend)
+cd ../metal
+uv sync
+mv ../../.env .
 
 # Setup a systemd service for the Flask application (Metal)
 sudo tee /etc/systemd/system/metal.service > /dev/null <<EOL
