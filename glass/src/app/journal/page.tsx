@@ -157,17 +157,28 @@ export default function JournalPage() {
       display: 'flex',
       flexDirection: 'column',
     }}>
-      <Box sx={{ p: 2, pt: 3 }}>
+      <Box sx={{ 
+        p: 2,
+        bgcolor: 'background.paper', // Tan background for the button area
+        borderBottom: '1px solid',
+        borderColor: 'primary.main',
+      }}>
         <Button 
           fullWidth 
           variant="contained" 
           onClick={handleNewEntry}
-          sx={{ mb: 2 }}
+          sx={{ 
+            bgcolor: 'primary.main', // Teal background for the button
+            color: 'background.paper', // Light text color for contrast
+            '&:hover': {
+              bgcolor: 'primary.dark', // Darker teal on hover
+            },
+          }}
         >
           Start Writing
         </Button>
       </Box>
-      <List sx={{ px: 2 }}>
+      <List sx={{ px: 2, py: 2, flexGrow: 1, overflow: 'auto' }}>
         {entries.map((entry) => (
           <Card 
             key={entry.id}
@@ -176,6 +187,7 @@ export default function JournalPage() {
               cursor: 'pointer', 
               mb: 2,
               borderRadius: 2,
+              bgcolor: 'background.paper', // Tan background for entries
               transition: 'all 0.3s',
               '&:hover': {
                 boxShadow: 6,
