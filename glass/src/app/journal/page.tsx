@@ -11,6 +11,7 @@ import {
   TextField,
   useMediaQuery,
   useTheme,
+  CircularProgress,
 } from '@mui/material'
 import { Delete as DeleteIcon, ArrowBack as ArrowBackIcon, Check as CheckIcon } from '@mui/icons-material'
 import { authenticatedFetch } from '@/utils/api'
@@ -31,6 +32,8 @@ export default function JournalPage() {
   const [content, setContent] = useState('')
   const [isDirty, setIsDirty] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
@@ -66,8 +69,10 @@ export default function JournalPage() {
         setSelectedEntry(updatedEntry)
       }
       setIsDirty(false)
+      setError(null)
     } catch (error) {
       console.error('Error saving entry:', error)
+      setError('Failed to save entry. Please try again later.')
     } finally {
       setIsSaving(false)
     }
@@ -84,6 +89,7 @@ export default function JournalPage() {
   }, [title, content, isDirty, handleSave])
 
   const fetchEntries = async () => {
+    setIsLoading(true)
     try {
       const response = await authenticatedFetch('/api/entries/', { method: 'GET' })
       if (!response.ok) throw new Error('Failed to fetch entries')
@@ -92,8 +98,12 @@ export default function JournalPage() {
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )
       setEntries(sortedEntries)
+      setError(null)
     } catch (error) {
       console.error('Error fetching entries:', error)
+      setError('Failed to fetch entries. Please try again later.')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -131,8 +141,10 @@ export default function JournalPage() {
         setContent('')
         setIsDirty(false)
       }
+      setError(null)
     } catch (error) {
       console.error('Error deleting entry:', error)
+      setError('Failed to delete entry. Please try again later.')
     }
   }
 
@@ -147,7 +159,7 @@ export default function JournalPage() {
     })
   }
 
-  const renderSidebar = () => (
+  const renderSidebar = useCallback(() => (
     <Box sx={{ 
       width: '100%', 
       height: '100%', 
@@ -159,7 +171,7 @@ export default function JournalPage() {
     }}>
       <Box sx={{ 
         p: 2,
-        bgcolor: 'background.paper', // Tan background for the button area
+        bgcolor: 'background.paper',
         borderBottom: '1px solid',
         borderColor: 'primary.main',
       }}>
@@ -167,52 +179,64 @@ export default function JournalPage() {
           fullWidth 
           variant="contained" 
           onClick={handleNewEntry}
+          aria-label="Start a new journal entry"
           sx={{ 
-            bgcolor: 'primary.main', // Teal background for the button
-            color: 'background.paper', // Light text color for contrast
+            bgcolor: 'primary.main',
+            color: 'background.paper',
             '&:hover': {
-              bgcolor: 'primary.dark', // Darker teal on hover
+              bgcolor: 'primary.dark',
             },
           }}
         >
           Start Writing
         </Button>
       </Box>
-      <List sx={{ px: 2, py: 2, flexGrow: 1, overflow: 'auto' }}>
-        {entries.map((entry) => (
-          <Card 
-            key={entry.id}
-            onClick={() => handleSelectEntry(entry)}
-            sx={{ 
-              cursor: 'pointer', 
-              mb: 2,
-              borderRadius: 2,
-              bgcolor: 'background.paper', // Tan background for entries
-              transition: 'all 0.3s',
-              '&:hover': {
-                boxShadow: 6,
-                transform: 'translateY(-2px)',
-              },
-            }}
-          >
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
-                {entry.title}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
-                {entry.content.substring(0, 50)}...
-              </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
-                {formatDate(entry.updatedAt)}
-              </Typography>
-            </CardContent>
-          </Card>
-        ))}
-      </List>
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <List sx={{ px: 2, py: 2, flexGrow: 1, overflow: 'auto' }}>
+          {entries.map((entry) => (
+            <Card 
+              key={entry.id}
+              onClick={() => handleSelectEntry(entry)}
+              sx={{ 
+                cursor: 'pointer', 
+                mb: 2,
+                borderRadius: 2,
+                bgcolor: 'background.paper',
+                transition: 'all 0.3s',
+                '&:hover': {
+                  boxShadow: 6,
+                  transform: 'translateY(-2px)',
+                },
+              }}
+            >
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 'bold' }}>
+                  {entry.title}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+                  {entry.content.substring(0, 50)}...
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary', mt: 1, display: 'block' }}>
+                  {formatDate(entry.updatedAt)}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </List>
+      )}
+      {error && (
+        <Typography color="error" sx={{ mt: 2, textAlign: 'center', px: 2 }}>
+          {error}
+        </Typography>
+      )}
     </Box>
-  )
+  ), [entries, isLoading, error, handleNewEntry, handleSelectEntry])
 
-  const renderMainContent = () => (
+  const renderMainContent = useCallback(() => (
     <Box sx={{ flexGrow: 1, p: 3, height: '100%', overflow: 'auto', bgcolor: 'background.default' }}>
       {isMobile && (
         <Button
@@ -315,8 +339,13 @@ export default function JournalPage() {
           Select an entry or start writing a new one
         </Typography>
       )}
+      {error && (
+        <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
+          {error}
+        </Typography>
+      )}
     </Box>
-  )
+  ), [selectedEntry, isNewEntry, title, content, isDirty, isSaving, error, isMobile, handleSave, handleDelete])
 
   return (
     <Box sx={{ 
