@@ -14,7 +14,11 @@ def create_app():
     app.config.from_object(Config)
 
     # Initialize CORS
-    CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}})
+    CORS(app, resources={r"/api/*": {"origins": [
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "http://compassletters.com:3000"
+    ]}})
     
     # Initialize JWTManager
     jwt.init_app(app)
