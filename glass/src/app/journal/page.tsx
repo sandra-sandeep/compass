@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { 
   Box, 
   Typography, 
@@ -12,7 +12,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import { Delete as DeleteIcon, ArrowBack as ArrowBackIcon } from '@mui/icons-material'
+import { Delete as DeleteIcon, ArrowBack as ArrowBackIcon, Check as CheckIcon } from '@mui/icons-material'
 import { authenticatedFetch } from '@/utils/api'
 
 interface JournalEntry {
@@ -30,6 +30,7 @@ export default function JournalPage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [isDirty, setIsDirty] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
 
@@ -37,15 +38,50 @@ export default function JournalPage() {
     fetchEntries()
   }, [])
 
+  const handleSave = useCallback(async () => {
+    if (!title && !content) return
+
+    setIsSaving(true)
+    const entryTitle = title || 'Draft'
+    try {
+      if (isNewEntry) {
+        const response = await authenticatedFetch('/api/entries/', {
+          method: 'POST',
+          body: JSON.stringify({ title: entryTitle, content })
+        })
+        if (!response.ok) throw new Error('Failed to create entry')
+        const newEntry = await response.json()
+        setEntries(prevEntries => [newEntry, ...prevEntries])
+        setSelectedEntry(newEntry)
+        setIsNewEntry(false)
+      } else if (selectedEntry) {
+        const response = await authenticatedFetch(`/api/entries/${selectedEntry.id}`, {
+          method: 'PUT',
+          body: JSON.stringify({ title: entryTitle, content })
+        })
+        if (!response.ok) throw new Error('Failed to update entry')
+        const updatedEntry = await response.json()
+        setEntries(prevEntries => prevEntries.map(e => e.id === updatedEntry.id ? updatedEntry : e)
+          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
+        setSelectedEntry(updatedEntry)
+      }
+      setIsDirty(false)
+    } catch (error) {
+      console.error('Error saving entry:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }, [title, content, isNewEntry, selectedEntry])
+
   useEffect(() => {
     if (isDirty) {
       const debouncedSave = setTimeout(() => {
         handleSave()
-      }, 1000)
+      }, 5000)
 
       return () => clearTimeout(debouncedSave)
     }
-  }, [title, content, isDirty])
+  }, [title, content, isDirty, handleSave])
 
   const fetchEntries = async () => {
     try {
@@ -81,38 +117,6 @@ export default function JournalPage() {
     setTitle(entry.title)
     setContent(entry.content)
     setIsDirty(false)
-  }
-
-  const handleSave = async () => {
-    if (!title && !content) return
-
-    const entryTitle = title || 'Draft'
-    try {
-      if (isNewEntry) {
-        const response = await authenticatedFetch('/api/entries/', {
-          method: 'POST',
-          body: JSON.stringify({ title: entryTitle, content })
-        })
-        if (!response.ok) throw new Error('Failed to create entry')
-        const newEntry = await response.json()
-        setEntries([newEntry, ...entries])
-        setSelectedEntry(newEntry)
-        setIsNewEntry(false)
-      } else if (selectedEntry) {
-        const response = await authenticatedFetch(`/api/entries/${selectedEntry.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ title: entryTitle, content })
-        })
-        if (!response.ok) throw new Error('Failed to update entry')
-        const updatedEntry = await response.json()
-        setEntries(entries.map(e => e.id === updatedEntry.id ? updatedEntry : e)
-          .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()))
-        setSelectedEntry(updatedEntry)
-      }
-      setIsDirty(false)
-    } catch (error) {
-      console.error('Error saving entry:', error)
-    }
   }
 
   const handleDelete = async (id: string) => {
@@ -236,8 +240,51 @@ export default function JournalPage() {
             margin="normal"
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button variant="contained" onClick={handleSave}>
-              Save
+            <Button 
+              variant="contained" 
+              onClick={handleSave}
+              disabled={isSaving}
+              sx={{ 
+                minWidth: '100px',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  transition: 'opacity 0.3s, transform 0.3s',
+                  opacity: isDirty || isSaving ? 1 : 0,
+                  transform: isDirty || isSaving ? 'translateY(0)' : 'translateY(100%)',
+                }}
+              >
+                {isDirty ? 'Save' : (isSaving ? 'Saving...' : '')}
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  transition: 'opacity 0.3s, transform 0.3s',
+                  opacity: !isDirty && !isSaving ? 1 : 0,
+                  transform: !isDirty && !isSaving ? 'translateY(0)' : 'translateY(-100%)',
+                }}
+              >
+                <CheckIcon sx={{ mr: 1 }} />
+                Saved
+              </Box>
             </Button>
             {selectedEntry && (
               <Button 
