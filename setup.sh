@@ -30,46 +30,6 @@ sudo apt install certbot -y || { echo "Certbot installation failed"; exit 1; }
 # Generate SSL certificate
 sudo certbot certonly --standalone -d compassletters.com
 
-# Install NGINX
-sudo apt install nginx -y || { echo "NGINX installation failed"; exit 1; }
-
-# Generate NGINX configuration
-sudo tee /etc/nginx/sites-available/compassletters.com > /dev/null <<EOL
-server {
-    listen 80;
-    server_name compassletters.com;
-    return 301 'https://$host$request_uri';
-}
-
-server {
-    listen 443 ssl;
-    server_name compassletters.com;
-
-    ssl_certificate /etc/letsencrypt/live/compassletters.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/compassletters.com/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    location / {
-        proxy_pass https://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade '$http_upgrade';
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host '$host';
-        proxy_cache_bypass '$http_upgrade';
-    }
-}
-EOL
-
-# Enable the NGINX configuration
-sudo ln -s /etc/nginx/sites-available/compassletters.com /etc/nginx/sites-enabled/
-
-# Test NGINX configuration
-sudo nginx -t || { echo "NGINX configuration test failed"; exit 1; }
-
-# Restart NGINX
-sudo systemctl restart nginx
-
 # Install Git
 sudo apt-get install git -y || { echo "Git installation failed"; exit 1; }
 
@@ -90,8 +50,26 @@ ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 # Clone the repositories with disabled host key checking
 git clone https://github.com/sandra-sandeep/compass.git || { echo "Repository clone failed"; exit 1; }
 
+# Navigate to the cloned repository
+cd compass
+
+# Install NGINX
+sudo apt install nginx -y || { echo "NGINX installation failed"; exit 1; }
+
+# Generate NGINX configuration
+sudo cp nginx.conf /etc/nginx/sites-available/compassletters.com
+
+# Enable the NGINX configuration
+sudo ln -s /etc/nginx/sites-available/compassletters.com /etc/nginx/sites-enabled/
+
+# Test NGINX configuration
+sudo nginx -t || { echo "NGINX configuration test failed"; exit 1; }
+
+# Restart NGINX
+sudo systemctl restart nginx
+
 # Setup glass (Next.js frontend)
-cd compass/glass
+cd glass
 npm ci || { echo "npm ci failed"; exit 1; }
 
 # Build the Next.js application
@@ -113,20 +91,7 @@ uv sync || { echo "uv sync failed"; exit 1; }
 mv ../../.env .
 
 # Setup a systemd service for the Flask application (Metal)
-sudo tee /etc/systemd/system/metal.service > /dev/null <<EOL
-[Unit]
-Description=Metal Flask Application
-After=network.target
-
-[Service]
-User=ubuntu
-WorkingDirectory=/home/ubuntu/compass/metal
-Environment="FLASK_ENV=production"
-ExecStart=uv run metal/app.py --host=0.0.0.0 --port=5000
-
-[Install]
-WantedBy=multi-user.target
-EOL
+sudo cp metal.service /etc/systemd/system/
 
 # Reload systemd to apply the new service
 sudo systemctl daemon-reload || { echo "systemd reload failed"; exit 1; }
