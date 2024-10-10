@@ -24,7 +24,7 @@ export default function AuthPage() {
       return
     }
 
-    const endpoint = tab === 0 ? '/api/auth/login' : '/api/auth/register'
+    const endpoint = tab === 0 ? '/auth/login' : '/auth/register'
     const body = { email, password }  // confirmPassword is not included
 
     try {

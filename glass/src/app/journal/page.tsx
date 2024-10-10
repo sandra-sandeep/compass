@@ -48,7 +48,7 @@ export default function JournalPage() {
     const entryTitle = title || 'Draft'
     try {
       if (isNewEntry) {
-        const response = await authenticatedFetch('/api/entries/', {
+        const response = await authenticatedFetch('/entries/', {
           method: 'POST',
           body: JSON.stringify({ title: entryTitle, content })
         })
@@ -58,7 +58,7 @@ export default function JournalPage() {
         setSelectedEntry(newEntry)
         setIsNewEntry(false)
       } else if (selectedEntry) {
-        const response = await authenticatedFetch(`/api/entries/${selectedEntry.id}`, {
+        const response = await authenticatedFetch(`/entries/${selectedEntry.id}`, {
           method: 'PUT',
           body: JSON.stringify({ title: entryTitle, content })
         })
@@ -91,7 +91,7 @@ export default function JournalPage() {
   const fetchEntries = async () => {
     setIsLoading(true)
     try {
-      const response = await authenticatedFetch('/api/entries/', { method: 'GET' })
+      const response = await authenticatedFetch('/entries/', { method: 'GET' })
       if (!response.ok) throw new Error('Failed to fetch entries')
       const data = await response.json()
       const sortedEntries = data.sort((a: JournalEntry, b: JournalEntry) => 
@@ -131,7 +131,7 @@ export default function JournalPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await authenticatedFetch(`/api/entries/${id}`, { method: 'DELETE' })
+      const response = await authenticatedFetch(`/entries/${id}`, { method: 'DELETE' })
       if (!response.ok) throw new Error('Failed to delete entry')
       setEntries(entries.filter(entry => entry.id !== id))
       if (selectedEntry?.id === id) {
