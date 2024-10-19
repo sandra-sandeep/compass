@@ -47,10 +47,6 @@ To run the API tests:
 
 ## API Endpoints
 
-- User Authentication:
-  - POST `/api/auth/register`: Register a new user
-  - POST `/api/auth/login`: Login user
-
 - Journal Entries:
   - POST `/api/entries`: Create a new entry
   - GET `/api/entries`: Get all entries for the authenticated user
@@ -60,7 +56,3 @@ To run the API tests:
 
 - OpenAI Integration:
   - GET `/prompt`: Send a prompt to OpenAI (demo endpoint)
-
-## Development
-
-This project uses Flask for the web framework and Flask-JWT-Extended for authentication. The current implementation uses in-memory storage for users and entries, which should be replaced with a proper database for production use.

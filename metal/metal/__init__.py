@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
 from metal.config import Config
+from metal.services.firebase_service import FirebaseService
 
-jwt = JWTManager()
+firebase_service = FirebaseService()
 
 def create_app():
     load_dotenv()
@@ -20,15 +20,13 @@ def create_app():
         "https://compassletters.com:3000"
     ]}})
     
-    # Initialize JWTManager
-    jwt.init_app(app)
+    # Initialize FirebaseService
+    firebase_service.init_app(app)
     
     # Register blueprints (routes)
-    from metal.routes.auth import auth_bp
     from metal.routes.journal import journal_bp
     from metal.routes.openai import openai_bp
 
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(journal_bp, url_prefix='/api/entries')
     app.register_blueprint(openai_bp, url_prefix='/api/openai')
     

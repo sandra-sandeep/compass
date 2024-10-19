@@ -20,6 +20,12 @@ Compass Letters journalling app
 
 ### Next Steps
 
-- Setup a reverse proxy so that the UI and backend can talk to each other without CORS issues
 - Containerize/dockerize the app
-- Setup firebase database
+- Setup firebase authentication on the frontend
+
+### Frontend Firebase Authentication Notes
+
+To Do:
+- Authenticate with Firebase on the frontend instead of using the old backend auth endpoints
+- Use the Firebase SDK to get the user's ID token
+- Send the ID token to the backend in the Authorization header

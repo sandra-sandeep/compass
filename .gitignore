@@ -1,0 +1,5 @@
+# Environment variables
+.env
+
+# Firebase credentials
+compass-letters-*.json

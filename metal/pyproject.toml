@@ -9,9 +9,9 @@ dependencies = [
     "openai",
     "flask",
     "flask-cors",
-    "flask-jwt-extended",
     "werkzeug",
     "requests",
+    "firebase-admin"
 ]
 
 [build-system]
