@@ -38,8 +38,7 @@ export default function AuthPage() {
         localStorage.setItem('token', data.token)
         router.push('/journal')
       } else {
-        const errorData = await response.json()
-        setError(errorData.message || 'An error occurred')
+        setError(response.statusText || 'An error occurred')
       }
     } catch (error) {
       console.error('Error:', error)
