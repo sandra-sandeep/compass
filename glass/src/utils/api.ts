@@ -2,11 +2,9 @@ const HEADER_BASE = {
     'Content-Type': 'application/json',
 }
 
-const BACKEND_URL_BASE = "https://compassletters.com/api"
-
 async function authenticatedFetch(url: string, options: RequestInit = {}) {
     return callApi(url, options)
-  }
+}
 
 async function loginOrRegister(url: string, options: RequestInit = {}) {
   return callApi(url, options)
@@ -23,7 +21,7 @@ async function callApi(url: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const response = await fetch(BACKEND_URL_BASE + url, { ...options, headers })
+  const response = await fetch(`/api${url}`, { ...options, headers })
 
   if (response.status === 401) {
     // Token is invalid or expired

@@ -32,7 +32,7 @@ def get_all_entries():
     user_entries = get_user_entries(user)
     return jsonify(user_entries), 200
 
-@journal_bp.route('/<string:id>', methods=['GET'])
+@journal_bp.route('/<string:id>/', methods=['GET'])
 @jwt_required()
 def get_single_entry(id):
     user = get_jwt_identity()
@@ -41,7 +41,7 @@ def get_single_entry(id):
         return jsonify({"error": "Entry not found"}), 404
     return jsonify(entry), 200
 
-@journal_bp.route('/<string:id>', methods=['PUT'])
+@journal_bp.route('/<string:id>/', methods=['PUT'])
 @jwt_required()
 def update_entry(id):
     title = request.json.get('title', None)
@@ -53,7 +53,7 @@ def update_entry(id):
         return jsonify({"error": "Entry not found"}), 404
     return jsonify(entry), 200
 
-@journal_bp.route('/<string:id>', methods=['DELETE'])
+@journal_bp.route('/<string:id>/', methods=['DELETE'])
 @jwt_required()
 def delete_entry(id):
     user = get_jwt_identity()
