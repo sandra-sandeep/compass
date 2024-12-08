@@ -7,7 +7,8 @@ Compass Letters journalling app
 ### Highlights
 
   - Beautiful UI
-  - UI and backend talked to each other within a few commits ago
+  - Runs locally
+
   - Setup a domain and a server with a static IP address
   - Setup HTTPS / SSL Certificate
   - Automated Lightsail instance setup
@@ -15,11 +16,10 @@ Compass Letters journalling app
 
 ### Issues
 
-  - Does not run locally because it depends on NGINX now and we haven't set that up for development
-  - Calls to the backend hang for some reason (or get SSL errors)
+  - Needs to be redeployed on the AWS box. There may be issues to fix now that we have changed how requests make it to the backend. We did this to make the app run locally again.
 
 ### Next Steps
 
-- Setup a reverse proxy so that the UI and backend can talk to each other without CORS issues
+- Redeploy to AWS and fix issues
 - Containerize/dockerize the app
 - Setup firebase database
